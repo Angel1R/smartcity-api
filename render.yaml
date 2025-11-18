@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: smartcity-secure-api
+    runtime: python
+    buildCommand: pip install -r api/requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port 10000
+    rootDir: .
+    envVars:
+      - key: MONGO_URI
+        sync: false
