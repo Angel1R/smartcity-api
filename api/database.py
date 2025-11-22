@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+import certifi
 
 # Cargar variables de entorno
 load_dotenv()
@@ -9,7 +10,9 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 
 # Cliente de Mongo
-client = MongoClient(MONGO_URI)
+# Al cliente de Mongo le pasamos la ubicación de los certificados de confianza.
+ca = certifi.where()
+client = MongoClient(MONGO_URI, tlsCAFile=ca)
 
 # Base de datos: SmartCitySecure
 db = client["SmartCitySecure"]

@@ -5,3 +5,6 @@ python-dotenv
 pydantic[email]
 passlib[bcrypt]
 python-multipart
+pymongo[srv]
+certifi
+flask-cors
