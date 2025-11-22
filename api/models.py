@@ -11,6 +11,10 @@ class UserInput(BaseModel):
 
 class UserDB(UserInput):
     id_usuario: str # Representará el ObjectId de Mongo convertido a string
+    
+class LoginRequest(BaseModel):
+    correo: str
+    contrasena: str
 
 # --- 2. Sensores ---
 class SensorInput(BaseModel):

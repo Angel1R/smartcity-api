@@ -1,15 +1,16 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from typing import List
 from passlib.context import CryptContext
+from pydantic import BaseModel
 import logging
 
 # Importar modelos y base de datos locales
 from models import (
     UserInput, UserDB, SensorInput, SensorDB,
     LuminaireInput, LuminaireDB, EnergyInput, EnergyDB,
-    AlertInput, AlertDB
+    AlertInput, AlertDB, LoginRequest
 )
 from database import (
     users_collection, sensors_collection, luminaires_collection,
@@ -34,6 +35,10 @@ app.add_middleware(
 # --- Funciones de ayuda ---
 def hash_password(password: str):
     return pwd_context.hash(password)
+
+# 
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
 def fix_id(doc):
     """Convierte el _id de Mongo a string para que Pydantic no falle"""
@@ -75,6 +80,29 @@ def get_users():
             contrasena=u["contrasena"]
         ))
     return users
+
+# === RUTA DE LOGIN ===
+@app.post("/login")
+def login(credentials: LoginRequest):
+    # 1. Buscar al usuario por correo en la base de datos
+    user = users_collection.find_one({"correo": credentials.correo})
+    
+    # 2. Si el usuario no existe, lanzar error 404 (o 401)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # 3. Verificar si la contraseña coincide
+    if not verify_password(credentials.contrasena, user["contrasena"]):
+        raise HTTPException(status_code=400, detail="Contraseña incorrecta")
+    
+    # 4. ¡Éxito! Devolver datos básicos (sin la contraseña)
+    return {
+        "mensaje": "Login exitoso",
+        "id_usuario": str(user["_id"]),
+        "nombre": user["nombre"],
+        "rol": user["rol"],
+        "status": "ok"
+    }
 
 # === 2. SENSORES ===
 @app.post("/sensores/", response_model=SensorDB)
