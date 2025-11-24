@@ -1,57 +1,38 @@
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, Literal
-from datetime import datetime
+from typing import Optional, Literal, List
 
-# --- 1. Usuarios ---
+# --- 1. USUARIOS ---
 class UserInput(BaseModel):
     nombre: str
-    rol: Literal["Administrador", "Tecnico"] # Ejemplo de roles
+    # CAMBIO: El rol es totalmente opcional ahora
+    rol: Optional[str] = None 
     correo: EmailStr
-    contrasena: str = Field(..., min_length=6)
+    contrasena: str = Field(..., min_length=8)
 
 class UserDB(UserInput):
-    id_usuario: str # Representará el ObjectId de Mongo convertido a string
-    
+    id_usuario: str
+
 class LoginRequest(BaseModel):
     correo: str
     contrasena: str
 
-# --- 2. Sensores ---
-class SensorInput(BaseModel):
-    ubicacion: str
-    estado: Literal["Activo", "Inactivo"]
-    nivel_luz: float
-    fecha_registro: datetime = Field(default_factory=datetime.utcnow)
+# --- 2. POSTES (Basado en tu imagen de MongoDB) ---
+class PosteInput(BaseModel):
+    lamp_id: str             # Ej: "3_lamp_001"
+    zona: int                # Ej: 3
+    tipo_lampara: str        # Ej: "Halógena"
+    consumo_kwh: float       # Ej: 0
+    voltaje: int             # Ej: 240
+    corriente: float         # Ej: 0.625
+    potencia_w: int          # Ej: 150
+    horas_funcionamiento: int # Ej: 10
+    estado_tecnico: str      # Ej: "Inoperativo"
+    
+    # Nota: En tu BD la fecha está guardada como STRING ("2024-01-11...").
+    # Lo dejamos como str para evitar errores de validación.
+    fecha: str               
+    
+    estado: str              # Ej: "encendido"
 
-class SensorDB(SensorInput):
-    id_sensor: str
-
-# --- 3. Luminarias ---
-class LuminaireInput(BaseModel):
-    id_sensor: str # Referencia al sensor (FK simulada)
-    estado: Literal["Encendida", "Apagada", "Falla"]
-    consumo_actual: float
-    ultima_actualizacion: datetime = Field(default_factory=datetime.utcnow)
-
-class LuminaireDB(LuminaireInput):
-    id_luminaria: str
-
-# --- 4. Consumo de Energía ---
-class EnergyInput(BaseModel):
-    id_luminaria: str # Referencia a la luminaria (FK simulada)
-    energia_consumida: float
-    fecha_medicion: datetime = Field(default_factory=datetime.utcnow)
-    alerta: Literal["Si", "No"]
-
-class EnergyDB(EnergyInput):
-    id_consumo: str
-
-# --- 5. Alertas de Seguridad ---
-class AlertInput(BaseModel):
-    tipo_alerta: str # Ej: "Ciberataque", "Falla técnica"
-    descripcion: str
-    fecha_alerta: datetime = Field(default_factory=datetime.utcnow)
-    estado: Literal["Pendiente", "Resuelto"]
-
-class AlertDB(AlertInput):
-    id_alerta: str
+class PosteDB(PosteInput):
+    id_poste: str            # Mapeo del _id de Mongo

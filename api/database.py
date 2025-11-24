@@ -6,20 +6,20 @@ import certifi
 # Cargar variables de entorno
 load_dotenv()
 
-# Usar la URI de la variable de entorno (se configura en Render)
+# Usar la URI de la variable de entorno
 MONGO_URI = os.getenv("MONGO_URI")
 
-# Cliente de Mongo
-# Al cliente de Mongo le pasamos la ubicación de los certificados de confianza.
+# Configuración de certificados SSL para Render/Atlas
 ca = certifi.where()
 client = MongoClient(MONGO_URI, tlsCAFile=ca)
 
-# Base de datos: SmartCitySecure
+# Base de datos
 db = client["SmartCitySecure"]
 
-# Colecciones basadas en tus diagramas
-users_collection = db["usuarios"]           #
-sensors_collection = db["sensores"]         #
-luminaires_collection = db["luminarias"]    #
-energy_collection = db["consumo_energia"]   #
-alerts_collection = db["alertas_seguridad"] #
+# --- COLECCIONES ACTUALIZADAS SEGÚN TU IMAGEN ---
+users_collection = db["Usuarios"]      # En tu imagen aparece con mayúscula 'Usuarios'
+posts_collection = db["Postes"]        # Nueva colección principal 'Postes'
+
+# Colecciones anteriores (Dejadas por referencia, puedes borrarlas si ya no existen)
+# energy_collection = db["consumo_energia"]
+# alerts_collection = db["alertas_seguridad"]

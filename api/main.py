@@ -1,29 +1,23 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from bson import ObjectId
 from typing import List
 from passlib.context import CryptContext
-from pydantic import BaseModel
-import logging
 
 # Importar modelos y base de datos locales
 from models import (
-    UserInput, UserDB, SensorInput, SensorDB,
-    LuminaireInput, LuminaireDB, EnergyInput, EnergyDB,
-    AlertInput, AlertDB, LoginRequest
+    UserInput, UserDB, LoginRequest,
+    PosteInput, PosteDB
 )
 from database import (
-    users_collection, sensors_collection, luminaires_collection,
-    energy_collection, alerts_collection
+    users_collection, posts_collection
 )
 
-# Configuración de seguridad para contraseñas
+# Configuración de seguridad
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Inicializar App
-app = FastAPI(title="SmartCity Secure API", version="1.0.0")
+app = FastAPI(title="SmartCity Secure API", version="2.0.0")
 
-# CORS (Permitir acceso desde cualquier lado por ahora)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,34 +30,32 @@ app.add_middleware(
 def hash_password(password: str):
     return pwd_context.hash(password)
 
-# 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
-
-def fix_id(doc):
-    """Convierte el _id de Mongo a string para que Pydantic no falle"""
-    doc["id"] = str(doc.pop("_id"))
-    return doc
 
 # --- RUTAS ---
 
 @app.get("/")
 def read_root():
-    return {"Proyecto": "SmartCity Secure", "Status": "Online 🟢"}
+    return {"Proyecto": "SmartCity Secure", "Status": "Database Updated 🟢"}
 
-# === 1. USUARIOS ===
+# === 1. USUARIOS (Actualizado: Rol Opcional) ===
 @app.post("/usuarios/", response_model=UserDB)
 def create_user(user: UserInput):
     user_dict = user.dict()
-    user_dict["contrasena"] = hash_password(user.password) # Encriptar
+    user_dict["contrasena"] = hash_password(user.contrasena)
+    
+    # Si no se envía rol, aseguramos que se guarde como null o el valor por defecto
+    if not user.rol:
+        user_dict["rol"] = None
+
     new_user = users_collection.insert_one(user_dict)
     created_user = users_collection.find_one({"_id": new_user.inserted_id})
     
-    # Mapeo manual para ajustar al modelo de respuesta
     return UserDB(
         id_usuario=str(created_user["_id"]),
         nombre=created_user["nombre"],
-        rol=created_user["rol"],
+        rol=created_user.get("rol"), # Usamos .get() por si no existe el campo
         correo=created_user["correo"],
         contrasena=created_user["contrasena"]
     )
@@ -75,7 +67,7 @@ def get_users():
         users.append(UserDB(
             id_usuario=str(u["_id"]),
             nombre=u["nombre"],
-            rol=u["rol"],
+            rol=u.get("rol"),
             correo=u["correo"],
             contrasena=u["contrasena"]
         ))
@@ -84,76 +76,47 @@ def get_users():
 # === RUTA DE LOGIN ===
 @app.post("/login")
 def login(credentials: LoginRequest):
-    # 1. Buscar al usuario por correo en la base de datos
     user = users_collection.find_one({"correo": credentials.correo})
     
-    # 2. Si el usuario no existe, lanzar error 404 (o 401)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
-    # 3. Verificar si la contraseña coincide
     if not verify_password(credentials.contrasena, user["contrasena"]):
         raise HTTPException(status_code=400, detail="Contraseña incorrecta")
     
-    # 4. ¡Éxito! Devolver datos básicos (sin la contraseña)
     return {
         "mensaje": "Login exitoso",
         "id_usuario": str(user["_id"]),
         "nombre": user["nombre"],
-        "rol": user["rol"],
+        "rol": user.get("rol"), # Puede ser None
         "status": "ok"
     }
 
-# === 2. SENSORES ===
-@app.post("/sensores/", response_model=SensorDB)
-def create_sensor(sensor: SensorInput):
-    new_sensor = sensors_collection.insert_one(sensor.dict())
-    created_sensor = sensors_collection.find_one({"_id": new_sensor.inserted_id})
-    return SensorDB(id_sensor=str(created_sensor["_id"]), **sensor.dict())
+# === 2. POSTES (Nueva colección unificada) ===
+@app.post("/postes/", response_model=PosteDB)
+def create_poste(poste: PosteInput):
+    # Insertamos los datos tal cual vienen del modelo (coinciden con tu imagen)
+    new_poste = posts_collection.insert_one(poste.dict())
+    created_poste = posts_collection.find_one({"_id": new_poste.inserted_id})
+    
+    return PosteDB(id_poste=str(created_poste["_id"]), **poste.dict())
 
-@app.get("/sensores/", response_model=List[SensorDB])
-def get_sensors():
-    sensors = []
-    for s in sensors_collection.find():
-        sensors.append(SensorDB(id_sensor=str(s["_id"]), ubicacion=s["ubicacion"], estado=s["estado"], nivel_luz=s["nivel_luz"], fecha_registro=s["fecha_registro"]))
-    return sensors
-
-# === 3. LUMINARIAS ===
-@app.post("/luminarias/", response_model=LuminaireDB)
-def create_luminaire(lum: LuminaireInput):
-    # Aquí podrías verificar si el sensor existe, pero lo dejaremos simple
-    new_lum = luminaires_collection.insert_one(lum.dict())
-    return LuminaireDB(id_luminaria=str(new_lum.inserted_id), **lum.dict())
-
-@app.get("/luminarias/", response_model=List[LuminaireDB])
-def get_luminaries():
-    lums = []
-    for l in luminaires_collection.find():
-        lums.append(LuminaireDB(id_luminaria=str(l["_id"]), **{k:v for k,v in l.items() if k != "_id"}))
-    return lums
-
-# === 4. CONSUMO ===
-@app.post("/consumo/", response_model=EnergyDB)
-def create_energy_record(energy: EnergyInput):
-    new_rec = energy_collection.insert_one(energy.dict())
-    return EnergyDB(id_consumo=str(new_rec.inserted_id), **energy.dict())
-
-@app.get("/consumo/", response_model=List[EnergyDB])
-def get_energy_records():
-    recs = []
-    for r in energy_collection.find():
-        recs.append(EnergyDB(id_consumo=str(r["_id"]), **{k:v for k,v in r.items() if k != "_id"}))
-    return recs
-
-# === 5. ALERTAS ===
-@app.post("/alertas/", response_model=AlertDB)
-def create_alert(alert: AlertInput):
-    new_alert = alerts_collection.insert_one(alert.dict())
-    return AlertDB(id_alerta=str(new_alert.inserted_id), **alert.dict())
-
-@app.get("/alertas/", response_model=List[AlertDB])
-def get_alerts():
-    alerts = []
-    for a in alerts_collection.find():
-        alerts.append(AlertDB(id_alerta=str(a["_id"]), **{k:v for k,v in a.items() if k != "_id"}))
-    return alerts
+@app.get("/postes/", response_model=List[PosteDB])
+def get_postes():
+    postes = []
+    for p in posts_collection.find():
+        postes.append(PosteDB(
+            id_poste=str(p["_id"]),
+            lamp_id=p["lamp_id"],
+            zona=p["zona"],
+            tipo_lampara=p.get("tipo_lampara", "N/A"),
+            consumo_kwh=p.get("consumo_kwh", 0),
+            voltaje=p.get("voltaje", 0),
+            corriente=p.get("corriente", 0),
+            potencia_w=p.get("potencia_w", 0),
+            horas_funcionamiento=p.get("horas_funcionamiento", 0),
+            estado_tecnico=p.get("estado_tecnico", "Desconocido"),
+            fecha=p.get("fecha", ""),
+            estado=p.get("estado", "Desconocido")
+        ))
+    return postes
