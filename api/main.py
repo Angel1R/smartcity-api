@@ -26,6 +26,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# === RUTA DE PING (KEEP-ALIVE) ===
+@app.get("/ping")
+def ping():
+    """Ruta ligera para mantener el servidor despierto"""
+    return {"status": "awake", "mensaje": "Pong!"}
+
 # --- Funciones de ayuda ---
 def hash_password(password: str):
     return pwd_context.hash(password)
