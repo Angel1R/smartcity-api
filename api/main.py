@@ -44,10 +44,7 @@ def read_root():
 def create_user(user: UserInput):
     user_dict = user.dict()
     user_dict["contrasena"] = hash_password(user.contrasena)
-    
-    # Si no se envía rol, aseguramos que se guarde como null o el valor por defecto
-    if not user.rol:
-        user_dict["rol"] = None
+
 
     new_user = users_collection.insert_one(user_dict)
     created_user = users_collection.find_one({"_id": new_user.inserted_id})
