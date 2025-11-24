@@ -17,7 +17,7 @@ client = MongoClient(MONGO_URI, tlsCAFile=ca)
 db = client["SmartCitySecure"]
 
 # --- COLECCIONES ACTUALIZADAS SEGÚN TU IMAGEN ---
-users_collection = db["Usuarios"]      # En tu imagen aparece con mayúscula 'Usuarios'
+users_collection = db["Usuarios"]      # Nueva colección principal 'Usuarios'
 posts_collection = db["Postes"]        # Nueva colección principal 'Postes'
 
 # Colecciones anteriores (Dejadas por referencia, puedes borrarlas si ya no existen)

@@ -5,7 +5,7 @@ from typing import Optional, Literal, List
 class UserInput(BaseModel):
     nombre: str
     # CAMBIO: El rol es totalmente opcional ahora
-    rol: Optional[str] = None 
+    rol: Optional[str] = 'Usuario' 
     correo: EmailStr
     contrasena: str = Field(..., min_length=8)
 
