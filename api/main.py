@@ -13,7 +13,7 @@ from database import (
 )
 
 # Configuración de seguridad
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 app = FastAPI(title="SmartCity Secure API", version="2.0.0")
 
@@ -46,22 +46,26 @@ def read_root():
     return {"Proyecto": "SmartCity Secure", "Status": "Database Updated 🟢"}
 
 # === 1. USUARIOS (Actualizado: Rol Opcional) ===
-@app.post("/usuarios/", response_model=UserDB)
-def create_user(user: UserInput):
-    user_dict = user.dict()
-    user_dict["contrasena"] = hash_password(user.contrasena)
+@app.post("/usuarios/")
+async def create_user(user: UserInput):
+    # Validar si ya existe
+    existing = users_collection.find_one({"correo": user.correo})
+    if existing:
+        raise HTTPException(status_code=400, detail="Correo ya registrado")
 
+    hashed = pwd_context.hash(user.contrasena)
 
-    new_user = users_collection.insert_one(user_dict)
-    created_user = users_collection.find_one({"_id": new_user.inserted_id})
-    
-    return UserDB(
-        id_usuario=str(created_user["_id"]),
-        nombre=created_user["nombre"],
-        rol=created_user.get("rol"), # Usamos .get() por si no existe el campo
-        correo=created_user["correo"],
-        contrasena=created_user["contrasena"]
-    )
+    nuevo = {
+        "nombre": user.nombre,
+        "correo": user.correo,
+        "contrasena": hashed,
+        "rol": user.rol
+    }
+
+    users_collection.insert_one(nuevo)
+
+    return {"mensaje": "Usuario creado", "usuario": user.correo}
+
 
 @app.get("/usuarios/", response_model=List[UserDB])
 def get_users():
