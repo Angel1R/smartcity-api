@@ -14,7 +14,7 @@ ca = certifi.where()
 client = MongoClient(MONGO_URI, tlsCAFile=ca)
 
 # Base de datos
-db = client["SmartCitySecure"]
+db = client["Luminarias"]
 
 # --- COLECCIONES ACTUALIZADAS SEGÚN TU IMAGEN ---
 users_collection = db["Usuarios"]      # Nueva colección principal 'Usuarios'
