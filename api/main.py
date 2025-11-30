@@ -102,11 +102,10 @@ def login(credentials: LoginRequest):
 # === 2. POSTES (Nueva colección unificada) ===
 @app.post("/postes/", response_model=PosteDB)
 def create_poste(poste: PosteInput):
-    # Insertamos los datos tal cual vienen del modelo (coinciden con tu imagen)
     new_poste = posts_collection.insert_one(poste.dict())
     created_poste = posts_collection.find_one({"_id": new_poste.inserted_id})
     
-    return PosteDB(id_poste=str(created_poste["_id"]), **poste.dict())
+    return PosteDB(id_poste=str(created_poste["_id"]), **created_poste)
 
 @app.get("/postes/", response_model=List[PosteDB])
 def get_postes():
@@ -124,6 +123,7 @@ def get_postes():
             horas_funcionamiento=p.get("horas_funcionamiento", 0),
             estado_tecnico=p.get("estado_tecnico", "Desconocido"),
             fecha=p.get("fecha", ""),
-            estado=p.get("estado", "Desconocido")
+            estado=p.get("estado", "Desconocido"),
+            coordenadas=p.get("coordenadas")
         ))
     return postes

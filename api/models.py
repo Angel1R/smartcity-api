@@ -16,7 +16,11 @@ class LoginRequest(BaseModel):
     correo: str
     contrasena: str
 
-# --- 2. POSTES (Basado en tu imagen de MongoDB) ---
+# --- 2. POSTES ---
+class Coordenadas(BaseModel):
+    lat: float
+    lng: float
+
 class PosteInput(BaseModel):
     lamp_id: str             # Ej: "3_lamp_001"
     zona: int                # Ej: 3
@@ -33,6 +37,9 @@ class PosteInput(BaseModel):
     fecha: str               
     
     estado: str              # Ej: "encendido"
+    
+    coordenadas: Optional[Coordenadas] = None
+
 
 class PosteDB(PosteInput):
     id_poste: str            # Mapeo del _id de Mongo
