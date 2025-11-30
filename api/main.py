@@ -104,8 +104,10 @@ def login(credentials: LoginRequest):
 def create_poste(poste: PosteInput):
     new_poste = posts_collection.insert_one(poste.dict())
     created_poste = posts_collection.find_one({"_id": new_poste.inserted_id})
-    
-    return PosteDB(id_poste=str(created_poste["_id"]), **created_poste)
+
+    created_poste["_id"] = str(created_poste["_id"])
+    return PosteDB(**created_poste)
+
 
 @app.get("/postes/", response_model=List[PosteDB])
 def get_postes():
