@@ -42,4 +42,4 @@ class PosteInput(BaseModel):
 
 
 class PosteDB(PosteInput):
-    id_poste: str            # Mapeo del _id de Mongo
+    _id: str

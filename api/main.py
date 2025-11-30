@@ -112,7 +112,7 @@ def get_postes():
     postes = []
     for p in posts_collection.find():
         postes.append(PosteDB(
-            id_poste=str(p["_id"]),
+            _id=str(p["_id"]),
             lamp_id=p["lamp_id"],
             zona=p["zona"],
             tipo_lampara=p.get("tipo_lampara", "N/A"),
