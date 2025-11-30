@@ -102,30 +102,16 @@ def login(credentials: LoginRequest):
 # === 2. POSTES (Nueva colección unificada) ===
 @app.post("/postes/", response_model=PosteDB)
 def create_poste(poste: PosteInput):
-    new_poste = posts_collection.insert_one(poste.dict())
-    created_poste = posts_collection.find_one({"_id": new_poste.inserted_id})
-
-    created_poste["_id"] = str(created_poste["_id"])
-    return PosteDB(**created_poste)
+    result = posts_collection.insert_one(poste.dict())
+    created = posts_collection.find_one({"_id": result.inserted_id})
+    created["_id"] = str(created["_id"])
+    return created
 
 
 @app.get("/postes/", response_model=List[PosteDB])
 def get_postes():
     postes = []
     for p in posts_collection.find():
-        postes.append(PosteDB(
-            _id=str(p["_id"]),
-            lamp_id=p["lamp_id"],
-            zona=p["zona"],
-            tipo_lampara=p.get("tipo_lampara", "N/A"),
-            consumo_kwh=p.get("consumo_kwh", 0),
-            voltaje=p.get("voltaje", 0),
-            corriente=p.get("corriente", 0),
-            potencia_w=p.get("potencia_w", 0),
-            horas_funcionamiento=p.get("horas_funcionamiento", 0),
-            estado_tecnico=p.get("estado_tecnico", "Desconocido"),
-            fecha=p.get("fecha", ""),
-            estado=p.get("estado", "Desconocido"),
-            coordenadas=p.get("coordenadas")
-        ))
+        p["_id"] = str(p["_id"])  # convertir ObjectId a string para que FastAPI no lo elimine
+        postes.append(p)
     return postes

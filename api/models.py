@@ -22,6 +22,7 @@ class Coordenadas(BaseModel):
     lng: float
 
 class PosteInput(BaseModel):
+    id: str = Field(..., alias="_id")
     lamp_id: str             # Ej: "3_lamp_001"
     zona: int                # Ej: 3
     tipo_lampara: str        # Ej: "Halógena"
@@ -39,6 +40,9 @@ class PosteInput(BaseModel):
     estado: str              # Ej: "encendido"
     
     coordenadas: Optional[Coordenadas] = None
+    
+    class Config:
+        allow_population_by_field_name = True
 
 
 class PosteDB(PosteInput):
