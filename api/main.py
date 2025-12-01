@@ -80,15 +80,19 @@ def get_users():
         ))
     return users
 
-
 # === RUTA DE LOGIN ===
 @app.post("/login")
 def login(credentials: LoginRequest):
     user = users_collection.find_one({"correo": credentials.correo})
-    # Devuelve el mismo 400 para ambos casos
-    if not user or not verify_password(credentials.contrasena, user["contrasena"]):
-        raise HTTPException(status_code=400, detail="Credenciales inválidas")
 
+    # Respuesta uniforme para evitar revelar si el correo existe
+    if not user:
+        return {"success": False, "message": "Credenciales inválidas"}
+
+    if not verify_password(credentials.contrasena, user["contrasena"]):
+        return {"success": False, "message": "Credenciales inválidas"}
+
+    # Opcional: genera JWT y devuélvelo
     return {
         "success": True,
         "message": "Login exitoso",
@@ -98,7 +102,6 @@ def login(credentials: LoginRequest):
             "rol": user.get("rol")
         }
     }
-    
 
 # === 2. POSTES (Nueva colección unificada) ===
 @app.post("/postes/", response_model=PosteDB)
