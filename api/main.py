@@ -84,19 +84,23 @@ def get_users():
 @app.post("/login")
 def login(credentials: LoginRequest):
     user = users_collection.find_one({"correo": credentials.correo})
-    
+
+    # Respuesta uniforme para evitar revelar si el correo existe
     if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    
+        return {"success": False, "message": "Credenciales inválidas"}
+
     if not verify_password(credentials.contrasena, user["contrasena"]):
-        raise HTTPException(status_code=400, detail="Contraseña incorrecta")
-    
+        return {"success": False, "message": "Credenciales inválidas"}
+
+    # Opcional: genera JWT y devuélvelo
     return {
-        "mensaje": "Login exitoso",
-        "id_usuario": str(user["_id"]),
-        "nombre": user["nombre"],
-        "rol": user.get("rol"), # Puede ser None
-        "status": "ok"
+        "success": True,
+        "message": "Login exitoso",
+        "user": {
+            "id": str(user["_id"]),
+            "nombre": user.get("nombre"),
+            "rol": user.get("rol")
+        }
     }
 
 # === 2. POSTES (Nueva colección unificada) ===
